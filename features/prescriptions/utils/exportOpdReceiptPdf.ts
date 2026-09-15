@@ -197,8 +197,8 @@ export async function exportOpdReceiptPdf({
   doc.text('℞', margin, y + 4)
   y += 7
 
-  const stampY = H - 36
-  const availableCanvasH = Math.max(40, stampY - y - 4)
+  const stampY = H - 42
+  const availableCanvasH = Math.max(30, stampY - y - 8)
 
   // Vector Canvas Handwriting (Apple Pencil / Stylus Notes)
   if (canvasData) {
@@ -327,43 +327,50 @@ export async function exportOpdReceiptPdf({
   doc.text(` · ${hospital.website}`, margin + helpPrefixW + helpNumbersW, stampY + 9)
 
   // Right: Clean Doctor Stamp Badge (Matching Screenshot 2)
-  const stampBoxW = 58
-  const stampBoxH = 19
+  const stampBoxW = 64
+  const stampBoxH = 21
   const stampBoxX = W - margin - stampBoxW
-  doc.setDrawColor(191, 219, 254) // Blue-200
+  doc.setDrawColor(37, 99, 235) // Blue-600
   doc.setFillColor(255, 255, 255)
-  doc.roundedRect(stampBoxX, stampY - 2, stampBoxW, stampBoxH, 2.5, 2.5, 'FD')
+  doc.setLineWidth(0.4)
+  doc.roundedRect(stampBoxX, stampY - 3, stampBoxW, stampBoxH, 2.5, 2.5, 'FD')
 
-  // Doctor Name in bold blue italic serif
-  doc.setFont('times', 'bolditalic')
+  // Doctor Name in bold blue
+  doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(29, 78, 216) // Blue-700
-  doc.text(doctor.name, stampBoxX + stampBoxW / 2, stampY + 3.2, { align: 'center' })
+  doc.text(doctor.name, stampBoxX + stampBoxW / 2, stampY + 2.5, { align: 'center' })
 
   // Degree & Speciality
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(6.5)
   doc.setTextColor(71, 85, 105)
   const specialityTitle = doctor.department || doctor.speciality
-  doc.text(`${doctor.qualifications} · ${specialityTitle}`, stampBoxX + stampBoxW / 2, stampY + 7.8, {
+  doc.text(`${doctor.qualifications} · ${specialityTitle}`, stampBoxX + stampBoxW / 2, stampY + 7, {
     align: 'center',
   })
 
   // Registration No
-  doc.setFont('courier', 'bold')
-  doc.setFontSize(7.5)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
   doc.setTextColor(30, 64, 175)
-  doc.text(`Regn No: ${doctor.regnNo || '22164'}`, stampBoxX + stampBoxW / 2, stampY + 12.8, { align: 'center' })
+  doc.text(`Regn No: ${doctor.regnNo || '22164'}`, stampBoxX + stampBoxW / 2, stampY + 11.2, { align: 'center' })
+
+  // Verified Stamp Tag
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(5.5)
+  doc.setTextColor(5, 150, 105) // Emerald-600
+  doc.text('[ DIGITALLY SIGNED & STAMPED ]', stampBoxX + stampBoxW / 2, stampY + 15.2, { align: 'center' })
 
   // Bottom Address Divider & Text
   doc.setDrawColor(226, 232, 240)
   doc.setLineWidth(0.35)
-  doc.line(margin, H - 11, W - margin, H - 11)
+  doc.line(margin, H - 12, W - margin, H - 12)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(6.5)
   doc.setTextColor(148, 163, 184)
-  doc.text(`${hospital.address} · Phone: ${hospital.phones}`, W / 2, H - 7, { align: 'center' })
+  doc.text(`${hospital.address} · Phone: ${hospital.phones}`, W / 2, H - 7.5, { align: 'center' })
 
   const filename = `OPD_Receipt_${patient.fullName.replace(/\s+/g, '_')}_${now.toISOString().slice(0, 10)}.pdf`
   doc.save(filename)

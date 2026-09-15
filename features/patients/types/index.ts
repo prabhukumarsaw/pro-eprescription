@@ -102,6 +102,7 @@ export interface Patient {
   prescriptionHistory: PrescriptionItem[]
   appointments: AppointmentRecord[]
   notes?: string
+  handwrittenPrescriptionCanvas?: string
   insuranceProvider?: string
   insurancePolicyNumber?: string
   createdAt: string

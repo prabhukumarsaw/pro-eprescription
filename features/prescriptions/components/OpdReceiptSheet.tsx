@@ -346,7 +346,7 @@ export function OpdReceiptSheet({
           </div>
 
           {/* Right: Clean Doctor Stamp Badge (matching Image 2) */}
-          <div className="px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-white dark:bg-blue-950/20 text-right shadow-xs">
+          <div className="px-4 py-2.5 rounded-xl border-2 border-dashed border-blue-400/80 dark:border-blue-600/80 bg-blue-50/40 dark:bg-blue-950/30 text-right shadow-xs">
             <div className="font-serif italic text-sm font-black text-blue-700 dark:text-blue-400 leading-tight">
               {doctor.name}
             </div>
@@ -356,6 +356,11 @@ export function OpdReceiptSheet({
             <p className="text-[9px] font-bold text-blue-800 dark:text-blue-300 font-mono mt-0.5">
               Regn No: {doctor.regnNo || '22164'}
             </p>
+            <div className="mt-1 flex items-center justify-end">
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 text-[8px] font-bold tracking-wider uppercase">
+                ✓ Digitally Signed &amp; Stamped
+              </span>
+            </div>
           </div>
         </div>
 

@@ -63,6 +63,11 @@ import PrescriptionCanvas, {
 } from '@/features/prescriptions/components/PrescriptionCanvas'
 import { OpdReceiptSheet } from '@/features/prescriptions/components/OpdReceiptSheet'
 import { exportOpdReceiptPdf } from '@/features/prescriptions/utils/exportOpdReceiptPdf'
+import {
+  savePrescriptionCanvas,
+  getPrescriptionCanvas,
+  getPrescriptionStrokes,
+} from '@/features/prescriptions/utils/canvas-store'
 import { usePatient, useUpdatePatient } from '@/features/patients/hooks/use-patients'
 import { cn } from '@/lib/utils'
 
@@ -176,23 +181,16 @@ export default function AdvancedHospitalPrescriptionPad() {
     }
 
     // Restore saved handwriting strokes if available
-    if (typeof window !== 'undefined') {
-      const savedStrokes = localStorage.getItem(`rx_strokes_${patient.id}`)
-      if (savedStrokes) {
-        try {
-          const parsed = JSON.parse(savedStrokes)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            canvasRef.current?.loadStrokes(parsed)
-            setStrokeCount(parsed.length)
-          }
-        } catch {}
-      }
-      const savedData =
-        sessionStorage.getItem(`rx_canvas_${patient.id}`) ||
-        localStorage.getItem(`rx_canvas_${patient.id}`)
-      if (savedData) {
-        setSavedCanvasData(savedData)
-      }
+    const savedStrokes = getPrescriptionStrokes(patient.id)
+    if (savedStrokes && savedStrokes.length > 0) {
+      canvasRef.current?.loadStrokes(savedStrokes)
+      setStrokeCount(savedStrokes.length)
+    }
+    const savedData =
+      patient.handwrittenPrescriptionCanvas ||
+      getPrescriptionCanvas(patient.id)
+    if (savedData) {
+      setSavedCanvasData(savedData)
     }
 
     setExaminationFindings('')
@@ -288,21 +286,12 @@ export default function AdvancedHospitalPrescriptionPad() {
     const strokes = canvasRef.current?.getStrokes()
     if (dataUrl) {
       setSavedCanvasData(dataUrl)
-      if (typeof window !== 'undefined') {
-        try {
-          sessionStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
-          localStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
-          if (strokes && strokes.length > 0) {
-            localStorage.setItem(`rx_strokes_${patient.id}`, JSON.stringify(strokes))
-          }
-        } catch (e) {
-          console.warn('Storage save warning:', e)
-        }
-      }
+      savePrescriptionCanvas(patient.id, dataUrl, strokes)
     }
     await updateMutation.mutateAsync({
       id: patient.id,
       payload: {
+        handwrittenPrescriptionCanvas: dataUrl || undefined,
         activePrescriptions: [
           ...(patient.activePrescriptions || []),
           ...cleanRxRows.map((r, i) => ({
@@ -527,23 +516,12 @@ export default function AdvancedHospitalPrescriptionPad() {
                 onClick={() => {
                   canvasRef.current?.undo()
                   setStrokeCount((c) => Math.max(0, c - 1))
-                  if (typeof window !== 'undefined' && patient?.id) {
+                  if (patient?.id) {
                     setTimeout(() => {
                       const dataUrl = canvasRef.current?.exportToDataURL()
                       const strokes = canvasRef.current?.getStrokes()
                       setSavedCanvasData(dataUrl || null)
-                      if (dataUrl) {
-                        sessionStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
-                        localStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
-                      } else {
-                        sessionStorage.removeItem(`rx_canvas_${patient.id}`)
-                        localStorage.removeItem(`rx_canvas_${patient.id}`)
-                      }
-                      if (strokes && strokes.length > 0) {
-                        localStorage.setItem(`rx_strokes_${patient.id}`, JSON.stringify(strokes))
-                      } else {
-                        localStorage.removeItem(`rx_strokes_${patient.id}`)
-                      }
+                      savePrescriptionCanvas(patient.id, dataUrl || null, strokes)
                     }, 50)
                   }
                 }}
@@ -558,10 +536,8 @@ export default function AdvancedHospitalPrescriptionPad() {
                     canvasRef.current?.clear()
                     setStrokeCount(0)
                     setSavedCanvasData(null)
-                    if (typeof window !== 'undefined' && patient?.id) {
-                      sessionStorage.removeItem(`rx_canvas_${patient.id}`)
-                      localStorage.removeItem(`rx_canvas_${patient.id}`)
-                      localStorage.removeItem(`rx_strokes_${patient.id}`)
+                    if (patient?.id) {
+                      savePrescriptionCanvas(patient.id, null)
                     }
                   }
                 }}
@@ -830,23 +806,15 @@ export default function AdvancedHospitalPrescriptionPad() {
                 paperLines={paperLines}
                 onStrokeComplete={() => {
                   setStrokeCount((c) => c + 1)
-                  if (typeof window !== 'undefined' && patient?.id) {
+                  if (patient?.id) {
                     setTimeout(() => {
                       const dataUrl = canvasRef.current?.exportToDataURL()
                       const strokes = canvasRef.current?.getStrokes()
                       if (dataUrl) {
                         setSavedCanvasData(dataUrl)
-                        try {
-                          sessionStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
-                          localStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
-                          if (strokes && strokes.length > 0) {
-                            localStorage.setItem(`rx_strokes_${patient.id}`, JSON.stringify(strokes))
-                          }
-                        } catch (e) {
-                          console.warn('Auto-save error:', e)
-                        }
+                        savePrescriptionCanvas(patient.id, dataUrl, strokes)
                       }
-                    }, 60)
+                    }, 50)
                   }
                 }}
                 className="w-full h-full"

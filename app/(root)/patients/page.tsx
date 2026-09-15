@@ -7,6 +7,20 @@ import { PatientsTable } from '@/features/patients/components/patients-table'
 import { NewPatientModal } from '@/features/patients/components/new-patient-modal'
 
 export default function PatientsPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="mx-auto max-w-[1600px] w-full p-8 text-center text-xs font-semibold text-muted-foreground animate-pulse">
+          Loading patients directory…
+        </div>
+      }
+    >
+      <PatientsPageContent />
+    </React.Suspense>
+  )
+}
+
+function PatientsPageContent() {
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = React.useState(false)
 
   return (

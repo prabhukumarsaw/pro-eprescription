@@ -11,9 +11,31 @@ import {
   getHospitalConfig,
   getDoctorConfig,
 } from '@/features/prescriptions/utils/receipt-defaults'
+import { getPrescriptionCanvas } from '@/features/prescriptions/utils/canvas-store'
 import { Stethoscope, CheckCircle2, X } from 'lucide-react'
 
 export default function PatientReceiptPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="h-screen w-screen flex items-center justify-center bg-[#f8fafc] dark:bg-zinc-950">
+          <div className="flex flex-col items-center gap-3">
+            <div className="size-12 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center animate-pulse text-primary">
+              <Stethoscope className="size-6" />
+            </div>
+            <p className="text-xs font-semibold text-muted-foreground">
+              Loading Hospital OPD Card &amp; Receipt…
+            </p>
+          </div>
+        </div>
+      }
+    >
+      <PatientReceiptPageContent />
+    </React.Suspense>
+  )
+}
+
+function PatientReceiptPageContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -28,17 +50,25 @@ export default function PatientReceiptPage() {
   const [showIssuedBanner, setShowIssuedBanner] = React.useState(justIssued)
   const [savedCanvasData, setSavedCanvasData] = React.useState<string | null>(null)
 
-  // Retrieve persistent handwriting canvas notes for this patient
+  // Synchronous and asynchronous multi-layer retrieval
   React.useEffect(() => {
-    if (typeof window !== 'undefined' && patientId) {
-      const stored =
-        sessionStorage.getItem(`rx_canvas_${patientId}`) ||
-        localStorage.getItem(`rx_canvas_${patientId}`)
-      if (stored) {
-        setSavedCanvasData(stored)
-      }
+    if (!patientId) return
+    const stored =
+      getPrescriptionCanvas(patientId) ||
+      patient?.handwrittenPrescriptionCanvas ||
+      (typeof window !== 'undefined'
+        ? sessionStorage.getItem(`rx_canvas_${patientId}`) ||
+          localStorage.getItem(`rx_canvas_${patientId}`)
+        : null)
+    if (stored) {
+      setSavedCanvasData(stored)
     }
-  }, [patientId])
+  }, [patientId, patient?.handwrittenPrescriptionCanvas])
+
+  const activeCanvas =
+    savedCanvasData ||
+    patient?.handwrittenPrescriptionCanvas ||
+    getPrescriptionCanvas(patientId)
 
   // Dynamic Configurations
   const hospital = React.useMemo(() => {
@@ -103,7 +133,7 @@ export default function PatientReceiptPage() {
         attendingSpeciality: doctor.speciality,
         guardianText,
         followUp: '5 Days',
-        canvasData: savedCanvasData,
+        canvasData: activeCanvas,
         hospitalConfig: hospital,
         doctorConfig: doctor,
       })
@@ -112,7 +142,7 @@ export default function PatientReceiptPage() {
     } finally {
       setIsExporting(false)
     }
-  }, [patient, rxRows, provisionalDiagnosis, examinationFindings, planOfCare, doctor, guardianText, hospital, savedCanvasData])
+  }, [patient, rxRows, provisionalDiagnosis, examinationFindings, planOfCare, doctor, guardianText, hospital, activeCanvas])
 
   if (isLoading) {
     return (
@@ -196,10 +226,10 @@ export default function PatientReceiptPage() {
             hospitalConfig={hospital}
             doctorConfig={doctor}
             canvasSlot={
-              savedCanvasData ? (
+              activeCanvas ? (
                 <div className="w-full relative min-h-[480px] flex flex-col items-center justify-start p-0 m-0 border-0 shadow-none bg-transparent">
                   <img
-                    src={savedCanvasData}
+                    src={activeCanvas}
                     alt="Physician Handwriting"
                     className="w-full h-auto object-contain max-h-[760px] print:max-h-none print:w-full select-none border-0 shadow-none bg-transparent"
                   />
