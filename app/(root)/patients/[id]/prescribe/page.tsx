@@ -121,7 +121,7 @@ export default function AdvancedHospitalPrescriptionPad() {
   const [penColor, setPenColor] = useState('#1d4ed8') // Doctor Royal Blue by default
   const [penWidth, setPenWidth] = useState(1.8)
   const [penStyle, setPenStyle] = useState<PenStyle>('fountain')
-  const [paperLines, setPaperLines] = useState(true)
+  const [paperLines, setPaperLines] = useState(false)
   const [strokeCount, setStrokeCount] = useState(0)
 
   // ── Expandable Writing Surface State ──────────────────────────────────────
@@ -173,6 +173,26 @@ export default function AdvancedHospitalPrescriptionPad() {
     } else {
       setHasAllergy(false)
       setAllergyDetails('')
+    }
+
+    // Restore saved handwriting strokes if available
+    if (typeof window !== 'undefined') {
+      const savedStrokes = localStorage.getItem(`rx_strokes_${patient.id}`)
+      if (savedStrokes) {
+        try {
+          const parsed = JSON.parse(savedStrokes)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            canvasRef.current?.loadStrokes(parsed)
+            setStrokeCount(parsed.length)
+          }
+        } catch {}
+      }
+      const savedData =
+        sessionStorage.getItem(`rx_canvas_${patient.id}`) ||
+        localStorage.getItem(`rx_canvas_${patient.id}`)
+      if (savedData) {
+        setSavedCanvasData(savedData)
+      }
     }
 
     setExaminationFindings('')
@@ -265,8 +285,20 @@ export default function AdvancedHospitalPrescriptionPad() {
   const handleConfirmIssue = useCallback(async () => {
     if (!patient) return
     const dataUrl = canvasRef.current?.exportToDataURL()
+    const strokes = canvasRef.current?.getStrokes()
     if (dataUrl) {
       setSavedCanvasData(dataUrl)
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
+          localStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
+          if (strokes && strokes.length > 0) {
+            localStorage.setItem(`rx_strokes_${patient.id}`, JSON.stringify(strokes))
+          }
+        } catch (e) {
+          console.warn('Storage save warning:', e)
+        }
+      }
     }
     await updateMutation.mutateAsync({
       id: patient.id,
@@ -492,14 +524,47 @@ export default function AdvancedHospitalPrescriptionPad() {
 
               {/* Undo / Clear */}
               <button
-                onClick={() => { canvasRef.current?.undo(); setStrokeCount(c => Math.max(0, c - 1)) }}
+                onClick={() => {
+                  canvasRef.current?.undo()
+                  setStrokeCount((c) => Math.max(0, c - 1))
+                  if (typeof window !== 'undefined' && patient?.id) {
+                    setTimeout(() => {
+                      const dataUrl = canvasRef.current?.exportToDataURL()
+                      const strokes = canvasRef.current?.getStrokes()
+                      setSavedCanvasData(dataUrl || null)
+                      if (dataUrl) {
+                        sessionStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
+                        localStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
+                      } else {
+                        sessionStorage.removeItem(`rx_canvas_${patient.id}`)
+                        localStorage.removeItem(`rx_canvas_${patient.id}`)
+                      }
+                      if (strokes && strokes.length > 0) {
+                        localStorage.setItem(`rx_strokes_${patient.id}`, JSON.stringify(strokes))
+                      } else {
+                        localStorage.removeItem(`rx_strokes_${patient.id}`)
+                      }
+                    }, 50)
+                  }
+                }}
                 className="size-7 flex items-center justify-center rounded-full text-slate-400 hover:text-white"
                 title="Undo"
               >
                 <Undo2 className="size-3.5" />
               </button>
               <button
-                onClick={() => { if (window.confirm('Clear all writing on the sheet?')) { canvasRef.current?.clear(); setStrokeCount(0) } }}
+                onClick={() => {
+                  if (window.confirm('Clear all writing on the sheet?')) {
+                    canvasRef.current?.clear()
+                    setStrokeCount(0)
+                    setSavedCanvasData(null)
+                    if (typeof window !== 'undefined' && patient?.id) {
+                      sessionStorage.removeItem(`rx_canvas_${patient.id}`)
+                      localStorage.removeItem(`rx_canvas_${patient.id}`)
+                      localStorage.removeItem(`rx_strokes_${patient.id}`)
+                    }
+                  }
+                }}
                 className="size-7 flex items-center justify-center rounded-full text-rose-400 hover:text-rose-300"
                 title="Clear"
               >
@@ -763,7 +828,27 @@ export default function AdvancedHospitalPrescriptionPad() {
                 penWidth={penWidth}
                 penStyle={penStyle}
                 paperLines={paperLines}
-                onStrokeComplete={() => setStrokeCount((c) => c + 1)}
+                onStrokeComplete={() => {
+                  setStrokeCount((c) => c + 1)
+                  if (typeof window !== 'undefined' && patient?.id) {
+                    setTimeout(() => {
+                      const dataUrl = canvasRef.current?.exportToDataURL()
+                      const strokes = canvasRef.current?.getStrokes()
+                      if (dataUrl) {
+                        setSavedCanvasData(dataUrl)
+                        try {
+                          sessionStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
+                          localStorage.setItem(`rx_canvas_${patient.id}`, dataUrl)
+                          if (strokes && strokes.length > 0) {
+                            localStorage.setItem(`rx_strokes_${patient.id}`, JSON.stringify(strokes))
+                          }
+                        } catch (e) {
+                          console.warn('Auto-save error:', e)
+                        }
+                      }
+                    }, 60)
+                  }
+                }}
                 className="w-full h-full"
               />
             </div>

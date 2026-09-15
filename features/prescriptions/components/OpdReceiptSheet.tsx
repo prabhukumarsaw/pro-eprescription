@@ -117,7 +117,7 @@ export function OpdReceiptSheet({
           {/* Center: OPD CARD Box */}
           <div className="hidden sm:block text-center">
             <span className="px-3 py-1 rounded-md bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 font-bold text-xs tracking-wider text-slate-800 dark:text-slate-200">
-              OPD CARD
+              PRESCRIPTION
             </span>
           </div>
 

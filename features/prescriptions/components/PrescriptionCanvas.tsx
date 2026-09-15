@@ -351,15 +351,30 @@ const PrescriptionCanvas = forwardRef<PrescriptionCanvasRef, PrescriptionCanvasP
         return [...strokesRef.current]
       },
       exportToDataURL() {
-        // Merge static + active canvas
         const s = staticCanvasRef.current
         if (!s) return null
+        if (strokesRef.current.length === 0) return null
+        const d = dpr.current
+        const w = s.width / d
+        const h = s.height / d
         const merged = document.createElement('canvas')
         merged.width = s.width
         merged.height = s.height
         const ctx = merged.getContext('2d')
         if (!ctx) return null
-        ctx.drawImage(s, 0, 0)
+
+        ctx.scale(d, d)
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+
+        // Receipt is ALWAYS plain - no ruled lines or margin borders on exported receipt
+        // Render only physician handwriting strokes at high quality
+        for (const stroke of strokesRef.current) {
+          const opts = getStrokeOptions(stroke.style, stroke.tool, stroke.width, true)
+          const outline = getStroke(stroke.points, opts)
+          renderOutline(ctx, outline, stroke.color, stroke.tool)
+        }
+
         return merged.toDataURL('image/png')
       },
       loadStrokes(strokes: CompletedStroke[]) {

@@ -3,75 +3,53 @@ import {
   HospitalConfig,
   DoctorStampConfig,
   RxReceiptItem,
+  BillingBreakdownItem,
   ReceiptBillingData,
   ReceiptAuditTrail,
 } from '../types/receipt'
 
+import { siteHospitalConfig } from '@/config/site-config'
+
 /**
  * Dynamic Hospital Configuration
- * Can be overridden by environment variables, hospital settings, or tenant config.
+ * Loaded from config/hospital.json and can be overridden by environment or tenant props.
  */
 export function getHospitalConfig(overrides?: Partial<HospitalConfig>): HospitalConfig {
   return {
-    name: process.env.NEXT_PUBLIC_HOSPITAL_NAME || 'AURARX HOSPITAL',
-    subtitle: process.env.NEXT_PUBLIC_HOSPITAL_SUBTITLE || '& Medical Research Centre',
-    slogan: 'HEALTH & HAPPINESS FOR ALL',
-    logoInitial: 'A',
-    opdCode: 'OPD/OPDC/Rev-1/19-Apr-2012',
-    establishedText: 'Since Aug 5, 2010',
-    address:
-      '1, Tughlakabad Institutional Area, Mehrauli Badarpur Road, New Delhi - 110062',
-    phones: '29958747, 29902001',
-    emergencyHelplines: '26053333, 29956885',
-    website: 'www.aurarx-hospital.org',
-    medicoLegalDisclaimer:
-      'Valid for 7 days from consultation date · Not valid for medico-legal purposes',
+    ...siteHospitalConfig,
     ...overrides,
   }
 }
 
 /**
- * Dynamic Doctor Resolution
- * Infers doctor credentials, qualifications, and registration number dynamically
- * from the patient's primary physician or assigned specialist.
+ * Dynamic Doctor Stamp & Credentials Configuration
+ * Extracts primary physician details from patient record, fallback to senior consultant.
  */
 export function getDoctorConfig(
   patient?: Patient | null,
   overrides?: Partial<DoctorStampConfig>
 ): DoctorStampConfig {
-  const physicianName = patient?.primaryPhysician?.name?.trim() || 'Dr. Marcus Webb'
-  const department =
-    patient?.primaryPhysician?.department?.trim() || 'Cardiology'
+  const docName =
+    patient?.primaryPhysician?.name ||
+    overrides?.name ||
+    'Dr. Liam Sterling, MD'
 
-  // Extract or dynamically assign qualifications based on department
-  let qualifications = 'MBBS, MD'
-  if (/cardio/i.test(department)) {
-    qualifications = 'MBBS, MD, DM'
-  } else if (/neuro/i.test(department)) {
-    qualifications = 'MBBS, MD, DM (Neurology)'
-  } else if (/ortho/i.test(department) || /surg/i.test(department)) {
-    qualifications = 'MBBS, MS, MCh'
-  } else if (/pediatric/i.test(department)) {
-    qualifications = 'MBBS, MD (Pediatrics)'
-  } else if (/gastro/i.test(department)) {
-    qualifications = 'MBBS, MD, DM (Gastro)'
-  }
-
-  // Registration number matching hospital official consultant stamp
-  const regnNo = overrides?.regnNo || '22164'
+  const dept =
+    patient?.primaryPhysician?.department ||
+    overrides?.department ||
+    'Pulmonology & Critical Care'
 
   return {
-    name: physicianName,
-    qualifications,
-    speciality: department.toUpperCase(),
-    department,
-    regnNo,
-    ...overrides,
+    name: docName,
+    qualifications: overrides?.qualifications || 'M.B.B.S, M.D. (Medicine)',
+    speciality: overrides?.speciality || dept,
+    regnNo: overrides?.regnNo || '22164',
+    department: dept,
   }
 }
 
 /**
- * Dynamic Itemized Billing Calculator
+ * Dynamic Hospital OPD Financial & Billing Breakdown
  * Computes consultation, pharmacy, and facility breakdown from actual patient data
  */
 export function generateReceiptBilling(
@@ -84,7 +62,7 @@ export function generateReceiptBilling(
     paymentMethodOverride ||
     (isInsurance ? 'Health Insurance / TPA' : 'Direct Cash')
 
-  const items = [
+  const items: BillingBreakdownItem[] = [
     {
       id: 'item-consult',
       description: `Specialist OPD Consultation - ${patient.primaryPhysician?.department || 'General Medicine'}`,

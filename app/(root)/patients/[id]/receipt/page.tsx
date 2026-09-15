@@ -26,6 +26,19 @@ export default function PatientReceiptPage() {
   const [zoom, setZoom] = React.useState<number>(1)
   const [isExporting, setIsExporting] = React.useState(false)
   const [showIssuedBanner, setShowIssuedBanner] = React.useState(justIssued)
+  const [savedCanvasData, setSavedCanvasData] = React.useState<string | null>(null)
+
+  // Retrieve persistent handwriting canvas notes for this patient
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && patientId) {
+      const stored =
+        sessionStorage.getItem(`rx_canvas_${patientId}`) ||
+        localStorage.getItem(`rx_canvas_${patientId}`)
+      if (stored) {
+        setSavedCanvasData(stored)
+      }
+    }
+  }, [patientId])
 
   // Dynamic Configurations
   const hospital = React.useMemo(() => {
@@ -90,6 +103,7 @@ export default function PatientReceiptPage() {
         attendingSpeciality: doctor.speciality,
         guardianText,
         followUp: '5 Days',
+        canvasData: savedCanvasData,
         hospitalConfig: hospital,
         doctorConfig: doctor,
       })
@@ -98,7 +112,7 @@ export default function PatientReceiptPage() {
     } finally {
       setIsExporting(false)
     }
-  }, [patient, rxRows, provisionalDiagnosis, examinationFindings, planOfCare, doctor, guardianText, hospital])
+  }, [patient, rxRows, provisionalDiagnosis, examinationFindings, planOfCare, doctor, guardianText, hospital, savedCanvasData])
 
   if (isLoading) {
     return (
@@ -182,11 +196,17 @@ export default function PatientReceiptPage() {
             hospitalConfig={hospital}
             doctorConfig={doctor}
             canvasSlot={
-              <div className="w-full min-h-[460px] rounded-xl border border-slate-200/90 dark:border-zinc-800 bg-[#fafaf9]/40 dark:bg-zinc-900/30 p-4">
-                <p className="text-[11px] font-sans text-slate-400 italic">
-                  Physician Handwriting &amp; Clinical Rx Notes
-                </p>
-              </div>
+              savedCanvasData ? (
+                <div className="w-full relative min-h-[480px] flex flex-col items-center justify-start p-0 m-0 border-0 shadow-none bg-transparent">
+                  <img
+                    src={savedCanvasData}
+                    alt="Physician Handwriting"
+                    className="w-full h-auto object-contain max-h-[760px] print:max-h-none print:w-full select-none border-0 shadow-none bg-transparent"
+                  />
+                </div>
+              ) : (
+                <div className="w-full min-h-[480px] p-0 m-0 border-0 shadow-none bg-transparent" />
+              )
             }
             className="print:shadow-none print:border-none print:rounded-none"
           />

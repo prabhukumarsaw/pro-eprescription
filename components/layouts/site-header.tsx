@@ -21,9 +21,9 @@ import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { label: 'Patients', href: '/patients', icon: Users },
-  { label: 'Prescriptions', href: '/prescriptions', icon: FileText },
-  { label: 'Appointments', href: '/appointments', icon: Calendar },
-  { label: 'Clinical Analytics', href: '/analytics', icon: Activity },
+  // { label: 'Prescriptions', href: '/prescriptions', icon: FileText },
+  // { label: 'Appointments', href: '/appointments', icon: Calendar },
+  // { label: 'Clinical Analytics', href: '/analytics', icon: Activity },
 ]
 
 export function SiteHeader() {
@@ -58,11 +58,11 @@ export function SiteHeader() {
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-semibold tracking-tight text-foreground font-sans">
-                  AuraRx
+                  Framework Futuristic
                 </span>
-                <span className="hidden xs:inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.2 text-[10px] font-medium text-primary border border-primary/20 leading-none">
+                {/* <span className="hidden xs:inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.2 text-[10px] font-medium text-primary border border-primary/20 leading-none">
                   Clinical OS
-                </span>
+                </span> */}
               </div>
               <span className="text-[10px] sm:text-[11px] text-muted-foreground leading-tight">
                 Smart e-Prescription
@@ -71,7 +71,7 @@ export function SiteHeader() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 pl-2">
+          {/* <nav className="hidden lg:flex items-center gap-1 pl-2">
             {NAV_ITEMS.map((item) => {
               const isActive = pathname.startsWith(item.href)
               const Icon = item.icon
@@ -94,7 +94,7 @@ export function SiteHeader() {
                 </Link>
               )
             })}
-          </nav>
+          </nav> */}
         </div>
 
         {/* Right Action Tools */}
@@ -141,10 +141,10 @@ export function SiteHeader() {
             </div>
             <div className="hidden md:flex flex-col text-left font-sans">
               <span className="text-[11px] font-semibold leading-tight text-foreground whitespace-nowrap">
-                Dr. Marcus Webb
+                Super Admin
               </span>
               <span className="text-[9px] text-muted-foreground leading-none whitespace-nowrap">
-                Attending Physician
+                Administrator
               </span>
             </div>
           </div>

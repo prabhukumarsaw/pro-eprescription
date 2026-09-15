@@ -91,7 +91,7 @@ export async function exportOpdReceiptPdf({
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8.5)
   doc.setTextColor(15, 23, 42)
-  doc.text('OPD CARD', W / 2, 13.5, { align: 'center' })
+  doc.text('PRESCRIPTION', W / 2, 13.5, { align: 'center' })
 
   // Right Header Metadata
   doc.setFontSize(6.5)
@@ -202,10 +202,21 @@ export async function exportOpdReceiptPdf({
 
   // Vector Canvas Handwriting (Apple Pencil / Stylus Notes)
   if (canvasData) {
-    const imgWidth = contentW
     try {
-      doc.addImage(canvasData, 'PNG', margin, y, imgWidth, availableCanvasH)
-    } catch {}
+      const imgProps = doc.getImageProperties(canvasData)
+      const ratio = imgProps.height / imgProps.width
+      let drawW = contentW
+      let drawH = drawW * ratio
+      if (drawH > availableCanvasH) {
+        drawH = availableCanvasH
+        drawW = drawH / ratio
+      }
+      doc.addImage(canvasData, 'PNG', margin, y, drawW, drawH)
+    } catch {
+      try {
+        doc.addImage(canvasData, 'PNG', margin, y, contentW, availableCanvasH)
+      } catch { }
+    }
   }
 
   /* ── Commented Out Guide Sections (Preserved for Reference) ──
